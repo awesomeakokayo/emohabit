@@ -180,3 +180,4 @@ Built solo with care and discipline.
 Designed for people who want structure — without pressure.
 
 EmoHabit — build better days, one routine at a time.
+
