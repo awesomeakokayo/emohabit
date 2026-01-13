@@ -1,8 +1,6 @@
 import { StyleSheet, Dimensions, Image, Text, View } from "react-native";
 import { images } from "@/assets/images"; 
 
-const { height } = Dimensions.get("window");
-
 export default function Index() {
   return (
     <View
@@ -25,9 +23,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 85,
     fontWeight: "semibold",
-    fontSize: 22,
+    fontSize: 20,
   },
   emo: {
-    height: height * 0.47,
+    height: 400,
   },
 });
