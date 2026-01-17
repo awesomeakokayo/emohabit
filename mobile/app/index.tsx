@@ -1,7 +1,20 @@
 import { StyleSheet, Dimensions, Image, Text, View } from "react-native";
-import { images } from "@/assets/images"; 
+import { images } from "@/assets/images";
+import { useRouter } from "expo-router";
+import { useEffect } from "react";
 
 export default function Index() {
+  const router = useRouter();
+
+  useEffect(() => {
+
+    const timer = setTimeout(() => {
+      router.replace("/auth/createaccount");
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <View
       style={{
