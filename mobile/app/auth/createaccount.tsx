@@ -1,7 +1,9 @@
-import { StyleSheet, View, Text, TextInput } from 'react-native'
+import { Image, Pressable, StyleSheet, View, Text, TextInput } from 'react-native'
+import { useState } from 'react'
 import React from 'react'
 
 const createaccount = () => {
+  const [focused, setFocused] = useState(false);
   return (
     <View
       style={{
@@ -20,19 +22,51 @@ const createaccount = () => {
       }}>
         <View style={styles.inputcontainer}>
           <Text style={styles.labeltext}>Full name</Text>
-          <TextInput style={styles.inputbox}/>
+          <TextInput
+            style={[
+              styles.inputbox,
+              focused && styles.focusedInput,
+            ]}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder="John Doe"
+            placeholderTextColor="#757575"
+          />
         </View>
         <View style={styles.inputcontainer}>
           <Text style={styles.labeltext}>Email</Text>
-          <TextInput style={styles.inputbox}/>
+          <TextInput
+            style={[
+              styles.inputbox,
+              focused && styles.focusedInput,
+            ]}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder="johndoe@email.com"
+            placeholderTextColor="#757575"
+          />
         </View>
         <View style={styles.inputcontainer}>
-          <label htmlFor="password" style={styles.labeltext}>Password</label>
-          <TextInput style={styles.inputbox}/>
+          <Text style={styles.labeltext}>Password</Text>
+          <TextInput
+            style={[
+              styles.inputbox,
+              focused && styles.focusedInput,
+            ]}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+          />
         </View>
         <View style={styles.inputcontainer}>
           <Text style={styles.labeltext}>Confirm Password</Text>
-          <TextInput style={styles.inputbox}/>
+          <TextInput
+            style={[
+              styles.inputbox,
+              focused && styles.focusedInput,
+            ]}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+          />
         </View>
       </View>
 
@@ -41,29 +75,53 @@ const createaccount = () => {
         gap: 10,
         margin: 20,
       }}>
-        <button style={{
+        <Pressable style={{
           width: 335,
-          background: "#FF8A00",
+          backgroundColor: "#FF8A00",
           height: 53,
           borderRadius: 25,
-          color: "white",
-          border: "none",
-          fontSize: 22,
-          fontWeight: "mediumb",
-        }}>Sign up</button> 
-        <Text style={styles.labeltext}>or sign up with</Text>
+          justifyContent: "center",
+          alignItems: "center"
+        }}>
+            <Text style={{
+            color: "white",
+            fontSize: 22,
+            fontWeight: "medium",
+            justifyContent: "center",
+            }} >Sign up</Text>
+          </Pressable> 
+        <View style={styles.container}>
+          <View style={styles.line} />
+          <Text style={styles.text}>or sign up with</Text>
+          <View style={styles.line} />
+        </View>
         <View style={{
           flexDirection: "row",
           gap: 12, 
         }}>
-          <button style={styles.buttonbox}>Google</button>
-          <button style={styles.buttonbox}>Apple</button>
+          <Pressable style={styles.buttonbox}>
+            <Image 
+              source={require("../../assets/images/google.svg")}
+              style={{ width: 23, height: 23}}
+            />
+            <Text style={styles.butttonText}>Google</Text>
+          </Pressable>
+          
+          <Pressable style={styles.buttonbox}>
+            <Image 
+              source={require("../../assets/images/apple.svg")}
+              style={{ width: 25, height: 25}}
+            />
+            <Text style={styles.butttonText}> Apple</Text>
+          </Pressable>
         </View>
         <Text style={{
           color: "white",
+          marginTop: 50, 
         }}>Already have an account?
           <a href="" style={{
             color: "#FF8A00",
+          textDecorationLine: "none"
           }}> Sign in</a>
         </Text>
       </View>
@@ -89,7 +147,7 @@ const styles = StyleSheet.create({
   labeltext: {
     color: "#C9C9C9",
     fontSize: 13,
-    alignItems: "flex-start"
+    alignItems: "flex-start",
   },
   inputbox: {
     borderWidth: 1,
@@ -97,6 +155,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#1E1E1E",
     height: 53,
     borderRadius: 25,
+    color: "white",
+    padding: 20,
+    fontSize: 16,
+    fontWeight: "medium",
   },
   buttonbox: {
     height: 50,
@@ -108,6 +170,19 @@ const styles = StyleSheet.create({
     backgroundColor: "#1E1E1E",
     borderColor: "white",
     borderWidth: 1,
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+  },
+  butttonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "semibold",
+  },
+  focusedInput: {
+    borderColor: "#FF8A00", // active color
   },
   inputcontainer: {
     flexDirection: "column",
@@ -115,7 +190,26 @@ const styles = StyleSheet.create({
     width: 335,
     height: 75,
     gap: 4,
-  }
+  },
+  container: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 24,
+    width: 328,
+  },
+
+  line: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#ffff",
+  },
+
+  text: {
+    marginHorizontal: 12,
+    fontSize: 14,
+    color: "#ffff",
+    fontWeight: "regular",
+  },
 
 })
 
