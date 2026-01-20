@@ -1,0 +1,1005 @@
+# EmoHabit Backend Architecture Walkthrough 🧠⏱️
+
+This guide walks you through building a complete FastAPI backend for EmoHabit, explaining **what** to build, **why** it matters, and **how** each component fits together.
+
+---
+
+## Your Design Flow (Reference)
+
+Based on your screens, here's the user journey your backend must support:
+
+````carousel
+![Welcome to Login/Signup Flow](C:/Users/AWESOME/.gemini/antigravity/brain/8f189862-3524-4b3e-8f94-6b851d8e4cee/uploaded_image_0_1768821989424.png)
+<!-- slide -->
+![Onboarding to Home Dashboard](C:/Users/AWESOME/.gemini/antigravity/brain/8f189862-3524-4b3e-8f94-6b851d8e4cee/uploaded_image_1_1768821989424.png)
+````
+
+---
+
+## 1. Current State & What You Already Have
+
+Your existing server structure:
+
+```
+server/
+├── main.py          # FastAPI app entry point ✅
+├── config.py        # Configuration settings ✅
+├── db.py            # Database connection ✅
+├── health.py        # Health check endpoint ✅
+├── auth/            # Basic auth routes ✅
+│   ├── deps.py
+│   └── routes.py
+├── users/           # Basic user routes ✅
+│   ├── models.py
+│   └── routes.py
+└── app/             # Empty - needs structure
+```
+
+**What needs to be built:**
+- Complete database models (SQLAlchemy/Prisma)
+- Onboarding data collection endpoints
+- Routine generation & management
+- Task execution tracking
+- Weekly analytics engine
+- Emo AI integration layer
+
+---
+
+## 2. Technology Stack & Dependencies
+
+### Required Dependencies
+
+```txt
+# requirements.txt
+
+# Core Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
+
+# Database
+sqlalchemy>=2.0.25
+alembic>=1.13.1              # Database migrations
+asyncpg>=0.29.0              # PostgreSQL async driver
+# OR use: aiosqlite>=0.19.0  # SQLite for development
+
+# Authentication
+python-jose[cryptography]>=3.3.0   # JWT tokens
+passlib[bcrypt]>=1.7.4             # Password hashing
+authlib>=1.3.0                     # OAuth (Google/Apple)
+
+# Validation & Utilities
+pydantic>=2.6.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+httpx>=0.26.0                      # HTTP client for external APIs
+
+# Optional: AI/LLM Integration
+openai>=1.12.0                     # For Emo AI suggestions
+
+# Testing
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+httpx>=0.26.0
+```
+
+### Why These Choices?
+
+| Dependency | Why |
+|------------|-----|
+| **FastAPI** | Async-first, auto-generates OpenAPI docs, great for mobile backends |
+| **SQLAlchemy 2.0** | Modern async ORM, works with any SQL database |
+| **Alembic** | Version-controlled database migrations |
+| **python-jose** | Industry-standard JWT handling |
+| **passlib** | Secure password hashing with bcrypt |
+| **Pydantic v2** | Fast data validation, integrates seamlessly with FastAPI |
+
+---
+
+## 3. Recommended Project Structure
+
+```
+server/
+├── app/
+│   ├── __init__.py
+│   ├── main.py                 # FastAPI app initialization
+│   ├── config.py               # Settings & environment vars
+│   ├── database.py             # DB connection & session
+│   │
+│   ├── models/                 # SQLAlchemy models
+│   │   ├── __init__.py
+│   │   ├── user.py
+│   │   ├── onboarding.py
+│   │   ├── routine.py
+│   │   ├── task.py
+│   │   └── analytics.py
+│   │
+│   ├── schemas/                # Pydantic request/response models
+│   │   ├── __init__.py
+│   │   ├── user.py
+│   │   ├── onboarding.py
+│   │   ├── routine.py
+│   │   ├── task.py
+│   │   └── analytics.py
+│   │
+│   ├── api/                    # API routes organized by feature
+│   │   ├── __init__.py
+│   │   ├── v1/
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py
+│   │   │   ├── users.py
+│   │   │   ├── onboarding.py
+│   │   │   ├── routines.py
+│   │   │   ├── tasks.py
+│   │   │   └── analytics.py
+│   │   └── deps.py             # Shared dependencies (auth, db)
+│   │
+│   ├── services/               # Business logic layer
+│   │   ├── __init__.py
+│   │   ├── auth_service.py
+│   │   ├── routine_generator.py
+│   │   ├── task_tracker.py
+│   │   ├── analytics_engine.py
+│   │   └── emo_ai.py           # Emo's AI logic
+│   │
+│   └── utils/                  # Helper functions
+│       ├── __init__.py
+│       ├── security.py         # JWT, password hashing
+│       └── time_helpers.py     # Time zone handling
+│
+├── alembic/                    # Database migrations
+│   ├── versions/
+│   └── env.py
+│
+├── tests/                      # Test suite
+│   ├── conftest.py
+│   ├── test_auth.py
+│   ├── test_routines.py
+│   └── test_tasks.py
+│
+├── alembic.ini
+├── requirements.txt
+├── .env.example
+└── README.md
+```
+
+### Why This Structure?
+
+- **`models/`** — Database table definitions (your data structure)
+- **`schemas/`** — API request/response shapes (what clients send/receive)
+- **`api/`** — HTTP route handlers (thin layer, just handles requests)
+- **`services/`** — Business logic (the actual work happens here)
+- **Separation** — Makes testing easier, logic reusable, code maintainable
+
+---
+
+## 4. Database Models
+
+### Core Entities You Need
+
+```mermaid
+erDiagram
+    User ||--o{ OnboardingData : has
+    User ||--o{ Routine : creates
+    Routine ||--o{ Task : contains
+    Task ||--o{ TaskExecution : tracks
+    User ||--o{ WeeklyReport : receives
+    
+    User {
+        uuid id PK
+        string email UK
+        string password_hash
+        string full_name
+        string avatar_url
+        datetime created_at
+        boolean is_active
+    }
+    
+    OnboardingData {
+        uuid id PK
+        uuid user_id FK
+        time sleep_time
+        time wake_time
+        json goals
+        json availability
+        boolean completed
+    }
+    
+    Routine {
+        uuid id PK
+        uuid user_id FK
+        string name
+        date effective_date
+        boolean is_active
+        boolean emo_approved
+        datetime created_at
+    }
+    
+    Task {
+        uuid id PK
+        uuid routine_id FK
+        string title
+        string category
+        time start_time
+        time end_time
+        int priority
+        json repeat_rules
+    }
+    
+    TaskExecution {
+        uuid id PK
+        uuid task_id FK
+        uuid user_id FK
+        date execution_date
+        datetime started_at
+        datetime completed_at
+        int time_spent_seconds
+        string status
+        json interruptions
+        text notes
+    }
+    
+    WeeklyReport {
+        uuid id PK
+        uuid user_id FK
+        date week_start
+        int total_tasks
+        int completed_tasks
+        int total_time_planned
+        int total_time_used
+        json insights
+        json suggestions
+    }
+```
+
+### Model Implementation Example
+
+```python
+# app/models/user.py
+from sqlalchemy import Column, String, Boolean, DateTime
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+import uuid
+from datetime import datetime
+from app.database import Base
+
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    password_hash = Column(String(255), nullable=True)  # Null for OAuth users
+    full_name = Column(String(255), nullable=False)
+    avatar_url = Column(String(500), nullable=True)
+    auth_provider = Column(String(50), default="email")  # email, google, apple
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    onboarding = relationship("OnboardingData", back_populates="user", uselist=False)
+    routines = relationship("Routine", back_populates="user")
+    task_executions = relationship("TaskExecution", back_populates="user")
+    weekly_reports = relationship("WeeklyReport", back_populates="user")
+```
+
+```python
+# app/models/routine.py
+from sqlalchemy import Column, String, Boolean, DateTime, Date, ForeignKey, Time, Integer, JSON
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+import uuid
+from datetime import datetime
+from app.database import Base
+
+class Routine(Base):
+    __tablename__ = "routines"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    name = Column(String(255), default="Daily Routine")
+    effective_date = Column(Date, nullable=False)
+    is_active = Column(Boolean, default=True)
+    emo_approved = Column(Boolean, default=False)  # Emo reviewed this routine
+    emo_suggestions = Column(JSON, nullable=True)  # Suggestions from Emo
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="routines")
+    tasks = relationship("Task", back_populates="routine", cascade="all, delete-orphan")
+
+
+class Task(Base):
+    __tablename__ = "tasks"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    routine_id = Column(UUID(as_uuid=True), ForeignKey("routines.id"), nullable=False)
+    title = Column(String(255), nullable=False)
+    category = Column(String(100), nullable=False)  # deep_work, fitness, learning, etc.
+    icon = Column(String(50), nullable=True)  # emoji or icon name
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+    priority = Column(Integer, default=1)  # 1=low, 2=medium, 3=high
+    repeat_rules = Column(JSON, nullable=True)  # {days: [1,2,3,4,5], frequency: "weekly"}
+    
+    # Relationships
+    routine = relationship("Routine", back_populates="tasks")
+    executions = relationship("TaskExecution", back_populates="task")
+```
+
+---
+
+## 5. API Endpoints Reference
+
+### Authentication (`/api/v1/auth`)
+
+| Method | Endpoint | Purpose | Request Body |
+|--------|----------|---------|--------------|
+| `POST` | `/register` | Create account | `{email, password, full_name}` |
+| `POST` | `/login` | Email login | `{email, password}` |
+| `POST` | `/login/google` | Google OAuth | `{id_token}` |
+| `POST` | `/login/apple` | Apple OAuth | `{identity_token}` |
+| `POST` | `/refresh` | Refresh JWT | `{refresh_token}` |
+| `POST` | `/logout` | Invalidate token | — |
+| `POST` | `/forgot-password` | Request reset | `{email}` |
+| `POST` | `/reset-password` | Reset password | `{token, new_password}` |
+
+**Why separate OAuth endpoints?** Each provider returns different token formats. Google uses `id_token`, Apple uses `identity_token`. Handling separately keeps code clean.
+
+---
+
+### Onboarding (`/api/v1/onboarding`)
+
+| Method | Endpoint | Purpose | Request Body |
+|--------|----------|---------|--------------|
+| `GET` | `/status` | Check onboarding progress | — |
+| `POST` | `/sleep-schedule` | Save sleep/wake times | `{sleep_time, wake_time}` |
+| `POST` | `/goals` | Save user goals | `{goals: ["fitness", "career"]}` |
+| `POST` | `/daily-description` | Free-form day description | `{description: "Wake 7, work 9-5..."}` |
+| `POST` | `/generate-routine` | Generate routine from inputs | — |
+| `PUT` | `/complete` | Mark onboarding complete | — |
+
+**Flow from your designs:**
+1. "First, the basics" → Sleep time screen → `/sleep-schedule`
+2. "What are we chasing?" → Goals screen → `/goals`
+3. "Walk me through your day" → Description → `/daily-description`
+4. "Let's build your blueprint" → `/generate-routine` → "Created routine A"
+
+---
+
+### Routines (`/api/v1/routines`)
+
+| Method | Endpoint | Purpose | Request Body |
+|--------|----------|---------|--------------|
+| `GET` | `/` | List all routines | — |
+| `GET` | `/{id}` | Get routine details | — |
+| `POST` | `/` | Create new routine | `{name, tasks: [...]}` |
+| `PUT` | `/{id}` | Update routine | `{name, tasks: [...]}` |
+| `DELETE` | `/{id}` | Delete routine | — |
+| `POST` | `/{id}/activate` | Set as active routine | — |
+| `POST` | `/{id}/emo-review` | Request Emo review | — |
+| `POST` | `/{id}/accept` | Accept routine (from design) | — |
+
+---
+
+### Tasks (`/api/v1/tasks`)
+
+| Method | Endpoint | Purpose | Request Body |
+|--------|----------|---------|--------------|
+| `GET` | `/today` | Get today's tasks | — |
+| `GET` | `/{id}` | Get task details | — |
+| `POST` | `/{id}/start` | Start task timer | — |
+| `POST` | `/{id}/pause` | Pause task | — |
+| `POST` | `/{id}/complete` | Mark complete | `{notes?, time_spent?}` |
+| `POST` | `/{id}/skip` | Skip task | `{reason?}` |
+| `GET` | `/{id}/interruptions` | Get interruptions | — |
+| `POST` | `/{id}/interruption` | Log interruption | `{app_name?, duration?}` |
+
+**Task States (from your design):**
+```
+PENDING → ACTIVE (Start pressed) → COMPLETED/SKIPPED
+              ↓
+           PAUSED
+```
+
+---
+
+### Analytics (`/api/v1/analytics`)
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `GET` | `/weekly` | Current week summary |
+| `GET` | `/weekly/{week_start}` | Specific week report |
+| `GET` | `/trends` | Long-term patterns |
+| `GET` | `/suggestions` | Emo's micro-suggestions |
+| `POST` | `/suggestions/{id}/accept` | Accept suggestion |
+| `POST` | `/suggestions/{id}/reject` | Reject suggestion |
+
+---
+
+## 6. Core Services (Business Logic)
+
+### Routine Generator Service
+
+This is the brain that creates routines from onboarding data:
+
+```python
+# app/services/routine_generator.py
+from datetime import time, timedelta
+from typing import List
+from app.schemas.routine import TaskCreate
+
+class RoutineGenerator:
+    """
+    Generates a daily routine based on user inputs.
+    
+    Inputs:
+    - wake_time: When user wakes up
+    - sleep_time: When user goes to bed
+    - goals: User's focus areas (fitness, career, learning, etc.)
+    - daily_description: Free-form description of their day
+    """
+    
+    GOAL_CATEGORIES = {
+        "fitness": {"icon": "🏃", "suggested_duration": 60, "best_time": "morning"},
+        "career": {"icon": "💼", "suggested_duration": 120, "best_time": "midday"},
+        "learning": {"icon": "📚", "suggested_duration": 60, "best_time": "evening"},
+        "mental_health": {"icon": "🧘", "suggested_duration": 30, "best_time": "morning"},
+    }
+    
+    def generate(
+        self,
+        wake_time: time,
+        sleep_time: time,
+        goals: List[str],
+        daily_description: str = None
+    ) -> List[TaskCreate]:
+        """
+        Generate a balanced daily routine.
+        
+        Algorithm:
+        1. Calculate available hours
+        2. Add essential tasks (wake up, meals, sleep prep)
+        3. Distribute goal-based tasks across the day
+        4. Parse daily_description for additional context
+        5. Fill gaps with buffer/break time
+        """
+        tasks = []
+        
+        # Essential tasks
+        tasks.append(TaskCreate(
+            title="Wake up",
+            category="essential",
+            icon="☀️",
+            start_time=wake_time,
+            end_time=self._add_minutes(wake_time, 15)
+        ))
+        
+        # Add breakfast 30 mins after wake
+        breakfast_time = self._add_minutes(wake_time, 30)
+        tasks.append(TaskCreate(
+            title="Breakfast",
+            category="essential",
+            icon="🍳",
+            start_time=breakfast_time,
+            end_time=self._add_minutes(breakfast_time, 30)
+        ))
+        
+        # Distribute goals throughout the day
+        current_time = self._add_minutes(breakfast_time, 45)
+        for goal in goals:
+            if goal in self.GOAL_CATEGORIES:
+                config = self.GOAL_CATEGORIES[goal]
+                tasks.append(TaskCreate(
+                    title=f"{goal.replace('_', ' ').title()}",
+                    category=goal,
+                    icon=config["icon"],
+                    start_time=current_time,
+                    end_time=self._add_minutes(current_time, config["suggested_duration"])
+                ))
+                current_time = self._add_minutes(current_time, config["suggested_duration"] + 15)
+        
+        # Parse daily_description with LLM if provided
+        if daily_description:
+            parsed_tasks = self._parse_description(daily_description)
+            tasks.extend(parsed_tasks)
+        
+        return sorted(tasks, key=lambda t: t.start_time)
+    
+    def _add_minutes(self, t: time, minutes: int) -> time:
+        # Implementation to add minutes to a time object
+        ...
+    
+    def _parse_description(self, description: str) -> List[TaskCreate]:
+        # Use LLM to parse free-form description into tasks
+        # e.g., "Work 9-5" → Task(title="Work", start=09:00, end=17:00)
+        ...
+```
+
+---
+
+### Task Tracker Service
+
+Handles task execution and state management:
+
+```python
+# app/services/task_tracker.py
+from datetime import datetime
+from uuid import UUID
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.task import Task, TaskExecution
+
+class TaskTracker:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+    
+    async def start_task(self, task_id: UUID, user_id: UUID) -> TaskExecution:
+        """Start tracking time for a task."""
+        execution = TaskExecution(
+            task_id=task_id,
+            user_id=user_id,
+            execution_date=datetime.utcnow().date(),
+            started_at=datetime.utcnow(),
+            status="active"
+        )
+        self.db.add(execution)
+        await self.db.commit()
+        return execution
+    
+    async def complete_task(
+        self,
+        execution_id: UUID,
+        notes: str = None
+    ) -> TaskExecution:
+        """Mark task as completed, calculate time spent."""
+        execution = await self.db.get(TaskExecution, execution_id)
+        execution.completed_at = datetime.utcnow()
+        execution.status = "completed"
+        execution.time_spent_seconds = (
+            execution.completed_at - execution.started_at
+        ).total_seconds()
+        execution.notes = notes
+        await self.db.commit()
+        return execution
+    
+    async def log_interruption(
+        self,
+        execution_id: UUID,
+        app_name: str = None,
+        duration_seconds: int = None
+    ):
+        """Log when user switches away from task."""
+        execution = await self.db.get(TaskExecution, execution_id)
+        interruptions = execution.interruptions or []
+        interruptions.append({
+            "timestamp": datetime.utcnow().isoformat(),
+            "app_name": app_name,
+            "duration": duration_seconds
+        })
+        execution.interruptions = interruptions
+        await self.db.commit()
+```
+
+---
+
+### Analytics Engine
+
+Generates weekly reports and insights:
+
+```python
+# app/services/analytics_engine.py
+from datetime import date, timedelta
+from typing import Dict, Any
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
+
+class AnalyticsEngine:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+    
+    async def generate_weekly_report(
+        self,
+        user_id: UUID,
+        week_start: date
+    ) -> Dict[str, Any]:
+        """Generate comprehensive weekly report."""
+        week_end = week_start + timedelta(days=6)
+        
+        # Query all task executions for the week
+        executions = await self._get_week_executions(user_id, week_start, week_end)
+        
+        total_tasks = len(executions)
+        completed = sum(1 for e in executions if e.status == "completed")
+        total_planned_seconds = sum(
+            (e.task.end_time - e.task.start_time).total_seconds()
+            for e in executions
+        )
+        total_actual_seconds = sum(e.time_spent_seconds or 0 for e in executions)
+        
+        # Calculate category breakdown
+        by_category = {}
+        for e in executions:
+            cat = e.task.category
+            if cat not in by_category:
+                by_category[cat] = {"planned": 0, "actual": 0, "completed": 0}
+            by_category[cat]["actual"] += e.time_spent_seconds or 0
+            if e.status == "completed":
+                by_category[cat]["completed"] += 1
+        
+        # Generate insights
+        insights = self._generate_insights(executions, by_category)
+        
+        # Generate suggestions
+        suggestions = await self._generate_suggestions(user_id, insights)
+        
+        return {
+            "week_start": week_start,
+            "total_tasks": total_tasks,
+            "completed_tasks": completed,
+            "completion_rate": completed / total_tasks if total_tasks > 0 else 0,
+            "time_planned_minutes": total_planned_seconds / 60,
+            "time_used_minutes": total_actual_seconds / 60,
+            "efficiency_score": min(total_actual_seconds / total_planned_seconds, 1.0) if total_planned_seconds > 0 else 0,
+            "by_category": by_category,
+            "insights": insights,
+            "suggestions": suggestions
+        }
+    
+    def _generate_insights(self, executions, by_category) -> list:
+        """Generate human-readable insights."""
+        insights = []
+        
+        # Check for patterns
+        if by_category.get("deep_work", {}).get("completed", 0) < 3:
+            insights.append({
+                "type": "warning",
+                "message": "You completed fewer deep work sessions than planned this week."
+            })
+        
+        # Check interruption patterns
+        high_interruption_tasks = [
+            e for e in executions
+            if e.interruptions and len(e.interruptions) > 3
+        ]
+        if high_interruption_tasks:
+            insights.append({
+                "type": "observation",
+                "message": f"{len(high_interruption_tasks)} tasks had frequent interruptions. Consider blocking distractions."
+            })
+        
+        return insights
+```
+
+---
+
+### Emo AI Service
+
+The personality layer for suggestions and check-ins:
+
+```python
+# app/services/emo_ai.py
+from openai import OpenAI
+from typing import Dict, Any
+
+class EmoAI:
+    """
+    Emo is EmoHabit's friendly routine guide.
+    
+    Personality:
+    - Supportive, not judgmental
+    - Suggests, never demands
+    - Uses encouraging language
+    - Respects user autonomy
+    """
+    
+    SYSTEM_PROMPT = """
+    You are Emo, a friendly routine guide in the EmoHabit app.
+    Your role is to help users build better daily habits.
+    
+    Personality traits:
+    - Warm and encouraging
+    - Never guilt or shame users
+    - Make practical, specific suggestions
+    - Celebrate small wins
+    - Respect user's final decisions
+    
+    Response format:
+    - Keep messages concise (1-2 sentences)
+    - Use simple language
+    - Be actionable
+    """
+    
+    def __init__(self, api_key: str):
+        self.client = OpenAI(api_key=api_key)
+    
+    async def review_routine(self, routine_data: Dict) -> Dict[str, Any]:
+        """Review a routine and suggest improvements."""
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": self.SYSTEM_PROMPT},
+                {"role": "user", "content": f"""
+                    Review this routine and suggest 1-2 improvements:
+                    Wake time: {routine_data['wake_time']}
+                    Sleep time: {routine_data['sleep_time']}
+                    Tasks: {routine_data['tasks']}
+                    
+                    Return JSON: {{"approved": bool, "suggestions": [...]}}
+                """}
+            ]
+        )
+        return response.choices[0].message.content
+    
+    async def generate_check_in(self, task_name: str, elapsed_minutes: int) -> str:
+        """Generate a gentle check-in message during task."""
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": self.SYSTEM_PROMPT},
+                {"role": "user", "content": f"""
+                    User has been working on "{task_name}" for {elapsed_minutes} minutes.
+                    Generate a brief, encouraging check-in message (max 15 words).
+                """}
+            ]
+        )
+        return response.choices[0].message.content
+    
+    async def generate_weekly_message(self, report: Dict) -> str:
+        """Generate personalized weekly summary message."""
+        completion_rate = report['completion_rate'] * 100
+        
+        if completion_rate >= 80:
+            tone = "celebratory"
+        elif completion_rate >= 50:
+            tone = "encouraging"
+        else:
+            tone = "supportive and understanding"
+        
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": self.SYSTEM_PROMPT},
+                {"role": "user", "content": f"""
+                    Generate a {tone} weekly summary message.
+                    Completion rate: {completion_rate}%
+                    Total tasks: {report['total_tasks']}
+                    Completed: {report['completed_tasks']}
+                    
+                    Keep it to 2-3 sentences max.
+                """}
+            ]
+        )
+        return response.choices[0].message.content
+```
+
+---
+
+## 7. Authentication Flow
+
+### JWT Token Structure
+
+```python
+# app/utils/security.py
+from datetime import datetime, timedelta
+from jose import jwt, JWTError
+from passlib.context import CryptContext
+from app.config import settings
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def create_access_token(user_id: str, expires_delta: timedelta = None) -> str:
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    payload = {
+        "sub": user_id,
+        "exp": expire,
+        "type": "access"
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
+
+def create_refresh_token(user_id: str) -> str:
+    expire = datetime.utcnow() + timedelta(days=30)
+    payload = {
+        "sub": user_id,
+        "exp": expire,
+        "type": "refresh"
+    }
+    return jwt.encode(payload, settings.REFRESH_SECRET_KEY, algorithm="HS256")
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return pwd_context.verify(plain, hashed)
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+```
+
+### OAuth Integration
+
+```python
+# app/services/auth_service.py
+from authlib.integrations.starlette_client import OAuth
+from app.config import settings
+
+oauth = OAuth()
+
+# Google OAuth
+oauth.register(
+    name='google',
+    client_id=settings.GOOGLE_CLIENT_ID,
+    client_secret=settings.GOOGLE_CLIENT_SECRET,
+    access_token_url='https://oauth2.googleapis.com/token',
+    authorize_url='https://accounts.google.com/o/oauth2/auth',
+    api_base_url='https://www.googleapis.com/oauth2/v1/',
+    client_kwargs={'scope': 'openid email profile'},
+)
+
+async def verify_google_token(id_token: str) -> dict:
+    """Verify Google ID token and extract user info."""
+    from google.oauth2 import id_token as google_id_token
+    from google.auth.transport import requests
+    
+    idinfo = google_id_token.verify_oauth2_token(
+        id_token,
+        requests.Request(),
+        settings.GOOGLE_CLIENT_ID
+    )
+    return {
+        "email": idinfo["email"],
+        "name": idinfo.get("name"),
+        "picture": idinfo.get("picture"),
+        "provider": "google"
+    }
+```
+
+---
+
+## 8. Environment Configuration
+
+```bash
+# .env.example
+
+# App
+APP_NAME=EmoHabit
+DEBUG=true
+API_V1_PREFIX=/api/v1
+
+# Security
+SECRET_KEY=your-super-secret-key-change-in-production
+REFRESH_SECRET_KEY=another-secret-for-refresh-tokens
+ACCESS_TOKEN_EXPIRE_MINUTES=15
+REFRESH_TOKEN_EXPIRE_DAYS=30
+
+# Database
+DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/emohabit
+# For development: sqlite+aiosqlite:///./emohabit.db
+
+# OAuth
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+APPLE_CLIENT_ID=your-apple-client-id
+APPLE_TEAM_ID=your-apple-team-id
+
+# AI (Optional)
+OPENAI_API_KEY=sk-your-openai-key
+
+# CORS
+ALLOWED_ORIGINS=http://localhost:8081,exp://192.168.x.x:8081
+```
+
+---
+
+## 9. Database Migrations with Alembic
+
+```bash
+# Initialize Alembic
+alembic init alembic
+
+# Create migration
+alembic revision --autogenerate -m "Initial tables"
+
+# Apply migration
+alembic upgrade head
+
+# Rollback
+alembic downgrade -1
+```
+
+---
+
+## 10. Implementation Order (Recommended)
+
+Build in this order for fastest path to MVP:
+
+| Phase | Components | Why First |
+|-------|------------|-----------|
+| **1** | Auth (register/login) | Users must exist before anything else |
+| **2** | User profile & onboarding | Collect data needed for routines |
+| **3** | Routine CRUD | Core feature - create/edit routines |
+| **4** | Task execution | Start/complete/track tasks |
+| **5** | Analytics engine | Depends on task execution data |
+| **6** | Emo AI integration | Enhancement layer, not critical path |
+
+---
+
+## 11. Testing Strategy
+
+```python
+# tests/test_routines.py
+import pytest
+from httpx import AsyncClient
+from app.main import app
+
+@pytest.fixture
+async def client():
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        yield ac
+
+@pytest.fixture
+async def auth_headers(client):
+    # Create test user and get token
+    response = await client.post("/api/v1/auth/register", json={
+        "email": "test@example.com",
+        "password": "testpass123",
+        "full_name": "Test User"
+    })
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+async def test_create_routine(client, auth_headers):
+    response = await client.post(
+        "/api/v1/routines",
+        headers=auth_headers,
+        json={
+            "name": "Morning Routine",
+            "tasks": [
+                {"title": "Wake up", "start_time": "07:00", "end_time": "07:15", "category": "essential"}
+            ]
+        }
+    )
+    assert response.status_code == 201
+    assert response.json()["name"] == "Morning Routine"
+```
+
+---
+
+## 12. Quick Start Commands
+
+```bash
+# Setup
+cd server
+python -m venv venv
+venv\Scripts\activate  # Windows
+pip install -r requirements.txt
+
+# Database
+alembic upgrade head
+
+# Run
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Test
+pytest tests/ -v
+
+# API Docs
+# → http://localhost:8000/docs (Swagger)
+# → http://localhost:8000/redoc (ReDoc)
+```
+
+---
+
+## Summary Checklist
+
+- [ ] Set up project structure with models/schemas/api/services
+- [ ] Install dependencies (FastAPI, SQLAlchemy, JWT libs)
+- [ ] Create database models (User, Onboarding, Routine, Task, TaskExecution, WeeklyReport)
+- [ ] Set up Alembic migrations
+- [ ] Implement auth endpoints (register, login, OAuth)
+- [ ] Build onboarding flow endpoints
+- [ ] Create routine generator service
+- [ ] Implement task execution tracking
+- [ ] Build analytics engine for weekly reports
+- [ ] Add Emo AI service (optional enhancement)
+- [ ] Write tests for core flows
+- [ ] Configure CORS for mobile app
+
+---
+
+> **Next Steps:** Would you like me to generate the actual implementation for any specific component? I can start with authentication, or the routine generator if you prefer!
