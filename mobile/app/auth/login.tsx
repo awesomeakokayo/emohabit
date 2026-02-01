@@ -1,32 +1,22 @@
-import { Image, StyleSheet, View, Text, TextInput } from 'react-native'
-import { useState } from 'react'
-import React from 'react'
+import { Image, StyleSheet, View, Text, TextInput, Pressable } from 'react-native';
+import { useState } from 'react';
+import React from 'react';
+import { useRouter } from 'expo-router';
+import { Colors } from '../../constants/Colors';
 
-const login = () => {
+const Login = () => {
+  const router = useRouter();
   const [focused, setFocused] = useState(false);
+
   return (
-    <View
-      style={{
-        flex: 1,
-        flexDirection: 'column',
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#1E1E1E",
-      }}
-    >
-      <Text style={styles.htext}>What's the plan for today?</Text>
+    <View style={styles.container}>
+      <Text style={styles.htext}>Welcome Back!</Text>
 
-
-      <View style={{
-        gap: 18,
-      }}>
+      <View style={{ gap: 18 }}>
         <View style={styles.inputcontainer}>
           <Text style={styles.labeltext}>Email</Text>
           <TextInput
-            style={[
-              styles.inputbox,
-              focused && styles.focusedInput,
-            ]}
+            style={[styles.inputbox, focused && styles.focusedInput]}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             placeholder="johndoe@email.com"
@@ -34,57 +24,46 @@ const login = () => {
           />
         </View>
         <View style={styles.inputcontainer}>
-          <label htmlFor="password" style={styles.labeltext}>Password</label>
+          <Text style={styles.labeltext}>Password</Text>
           <TextInput
-            style={[
-              styles.inputbox,
-              focused && styles.focusedInput,
-            ]}
+            style={[styles.inputbox, focused && styles.focusedInput]}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
+            secureTextEntry
           />
         </View>
-        
       </View>
 
-      <View style={{
-        alignItems: "center",
-        gap: 10,
-        margin: 20,
-      }}>
-        <button style={{
-          width: 335,
-          background: "#FF8A00",
-          height: 53,
-          borderRadius: 25,
-          color: "white",
-          border: "none",
-          fontSize: 22,
-          fontWeight: "mediumb",
-        }}>Sign up</button> 
-        <View style={styles.container}>
+      <View style={{ alignItems: "center", gap: 10, margin: 20 }}>
+        <Pressable
+          style={({ pressed }) => [styles.button, pressed && { opacity: 0.8 }]}
+          onPress={() => router.push('/Welcome/intro')}
+        >
+          <Text style={styles.buttonText}>Log In</Text>
+        </Pressable>
+
+        <View style={styles.dividerContainer}>
           <View style={styles.line} />
-          <Text style={styles.text}>or sign up with</Text>
+          <Text style={styles.text}>or sign in with</Text>
           <View style={styles.line} />
         </View>
-        <View style={{
-          flexDirection: "row",
-          gap: 12, 
-        }}>
-          <button style={styles.buttonbox}> <Image
-            source={require("../../assets/images/google.svg")}
-            style={{ width: 20, height: 20}}
-          /> Google</button>
-          <button style={styles.buttonbox}>Apple</button>
+
+        <View style={{ flexDirection: "row", gap: 12 }}>
+          <Pressable style={styles.buttonbox}>
+            {/* Ensure google.svg exists or remove image if creating error */}
+            <Text style={styles.socialText}>Google</Text>
+          </Pressable>
+          <Pressable style={styles.buttonbox}>
+            <Text style={styles.socialText}>Apple</Text>
+          </Pressable>
         </View>
-        <Text style={{
-          color: "white",
-          marginTop: 50, 
-        }}>Already have an account?
-          <a href="" style={{
-            color: "#FF8A00",
-          textDecorationLine: "none"
-          }}> Sign in</a>
+
+        <Text style={{ color: "white", marginTop: 50 }}>
+          Don't have an account?
+          <Text
+            style={{ color: "#FF8A00", fontWeight: 'bold' }}
+            onPress={() => router.push('/auth/createaccount')}
+          > Sign up</Text>
         </Text>
       </View>
     </View>
@@ -92,26 +71,24 @@ const login = () => {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1E1E1E",
+  },
   htext: {
     color: "white",
     fontSize: 32,
     fontWeight: "bold",
-    height: 100,
-    width: 300,
+    marginBottom: 40,
     textAlign: "center",
-  },
-  mhtext: {
-    color: "#FF8A00",
-    fontSize: 16,
-    lineHeight: 28,
-    textAlign: "center"
   },
   labeltext: {
     color: "#C9C9C9",
     fontSize: 13,
-    alignItems: "flex-start",
-    textDecorationStyle: "solid",
-    textDecorationLine: "line-through"
+    marginBottom: 5,
   },
   inputbox: {
     borderWidth: 1,
@@ -122,49 +99,58 @@ const styles = StyleSheet.create({
     color: "white",
     padding: 20,
     fontSize: 16,
-    fontWeight: "medium",
-  },
-  buttonbox: {
-    height: 50,
-    width: 158,
-    borderRadius: 25,
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-    backgroundColor: "#1E1E1E",
-    borderColor: "white",
-    borderWidth: 1,
   },
   focusedInput: {
-    borderColor: "#FF8A00", // active color
+    borderColor: "#FF8A00",
   },
   inputcontainer: {
-    flexDirection: "column",
-    justifyContent: "center",
     width: 335,
-    height: 75,
-    gap: 4,
+    marginBottom: 10,
   },
-  container: {
+  button: {
+    width: 335,
+    backgroundColor: "#FF8A00",
+    height: 53,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginVertical: 24,
     width: 328,
   },
-
   line: {
     flex: 1,
     height: 1,
     backgroundColor: "#ffff",
   },
-
   text: {
     marginHorizontal: 12,
     fontSize: 14,
     color: "#ffff",
-    fontWeight: "regular",
   },
+  buttonbox: {
+    height: 50,
+    width: 158,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: "#1E1E1E",
+    borderColor: "white",
+    borderWidth: 1,
+  },
+  socialText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  }
+});
 
-})
-
-export default login
+export default Login
