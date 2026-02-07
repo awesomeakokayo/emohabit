@@ -6,16 +6,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
-export default function CreateAccount() {
-  const [fullname, setFullname] = useState('');
+export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('')
-  const [confirmpassword, confirmPassword] = useState('')
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState(false);
 
-  const handleSignup = async () => {
-    if (!fullname || !email || !password || !confirmpassword) {
+  const handleLogin = async () => {
+    if (!email || !password) {
       Alert.alert('Error', 'Please fill in all the fields');
       return;
     }
@@ -27,11 +25,10 @@ export default function CreateAccount() {
       //   email,
       //   password
       // });
-      Alert.alert('success', 'Account created successfully! Please login,');
-      router.push('/auth/LoginScreen');
+      Alert.alert('success', 'Log in successful!');
     } catch (error: any) {
       console.error(error);
-      Alert.alert('Signup Failed', error.response?.data?.detail || 'Something went wrong');
+      Alert.alert('Login Failed', error.response?.data?.detail || 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -52,64 +49,40 @@ export default function CreateAccount() {
               <Ionicons name="arrow-back" size={24} color="#003366" />
             </TouchableOpacity> */}
 
-            <Text style={styles.htext}>Make the most of your time!</Text>
+            <Text style={styles.htext}>What's the plan for today?</Text>
 
             <View style={{
               gap: 18,
             }}>
               <View style={styles.form}>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Fullname</Text>
+                  <Text style={styles.label}>Email</Text>
                   <View style={styles.inputContainer}>
-                    <Ionicons name="person-outline" size={20} color="white" />
+                    <Ionicons name="mail-outline" size={20} color="white" />
                     <TextInput
                       placeholderTextColor="#8c8b8bff"
-                      style={styles.input} placeholder='Enter your full name' value={fullname} onChangeText={setFullname} autoCapitalize='none'
+                      style={styles.input}
+                      placeholder='Enter your email'
+                      value={email}
+                      onChangeText={setEmail}
+                      keyboardType='email-address'
+                      autoCapitalize="none"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Password</Text>
+                  <View style={styles.inputContainer}>
+                    <Ionicons name='lock-closed-outline' size={20} color='white' />
+                    <TextInput
+                      placeholderTextColor="#8c8b8bff"
+                      style={styles.input}
+                      placeholder="Create a password" value={password} onChangeText={setPassword} secureTextEntry
                     />
                   </View>
                 </View>
               </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email</Text>
-                <View style={styles.inputContainer}>
-                  <Ionicons name="mail-outline" size={20} color="white" />
-                  <TextInput
-                    placeholderTextColor="#8c8b8bff"
-                    style={styles.input}
-                    placeholder='Enter your email'
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType='email-address'
-                    autoCapitalize="none"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Password</Text>
-                <View style={styles.inputContainer}>
-                  <Ionicons name='lock-closed-outline' size={20} color='white' />
-                  <TextInput
-                    placeholderTextColor="#8c8b8bff"
-                    style={styles.input}
-                    placeholder="Create a password" value={password} onChangeText={setPassword} secureTextEntry
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}> Confirm Password</Text>
-                <View style={styles.inputContainer}>
-                  <Ionicons name='lock-closed-outline' size={20} color='white' />
-                  <TextInput
-                    placeholderTextColor="#8c8b8bff"
-                    style={styles.input}
-                    placeholder="Confirm your password" value={confirmpassword} onChangeText={confirmPassword} secureTextEntry
-                  />
-                </View>
-              </View>
-
             </View>
 
             <View style={{
@@ -117,10 +90,10 @@ export default function CreateAccount() {
               gap: 10,
               marginTop: 20,
             }}>
-              <Pressable onPress={handleSignup} style={{
+              <Pressable onPress={handleLogin} style={{
                 width: '100%',
                 backgroundColor: "#FF8A00",
-                height: 48,
+                height: 53,
                 borderRadius: 20,
                 justifyContent: "center",
                 alignItems: "center"
@@ -130,7 +103,7 @@ export default function CreateAccount() {
                   fontSize: 22,
                   fontWeight: "bold",
                   justifyContent: "center",
-                }} >Sign up</Text>
+                }} >Sign In</Text>
               </Pressable>
 
               <View style={styles.container}>
@@ -139,7 +112,11 @@ export default function CreateAccount() {
                 <View style={styles.line} />
               </View>
 
-              <View style={{ flexDirection: "row", gap: 12, }}>
+              <View style={{
+                flexDirection: "row",
+                gap: 16,
+              }}>
+
                 <Pressable style={styles.button}>
                   <Image
                     source={require("../../assets/images/google.svg")}
@@ -155,13 +132,14 @@ export default function CreateAccount() {
                   />
                   <Text style={styles.butttonText}> Apple</Text>
                 </Pressable>
+
               </View>
 
               <View style={styles.footer}>
-                <Text style={styles.footerText}>Already have an account? </Text>
-                <Link href='/auth/LoginScreen'>
+                <Text style={styles.footerText}>Don't have an account? </Text>
+                <Link href='/auth/CreateAccount'>
                   <TouchableOpacity>
-                    <Text style={styles.linkText}>Sign In</Text>
+                    <Text style={styles.linkText}>Sign Up</Text>
                   </TouchableOpacity>
                 </Link>
               </View>
@@ -250,6 +228,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
+    // backgroundColor: "#FF8A00",
     padding: 12,
     borderRadius: 16,
     height: 48,

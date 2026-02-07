@@ -9,7 +9,7 @@ export default function Index() {
   useEffect(() => {
 
     const timer = setTimeout(() => {
-      router.replace("/auth/createaccount");
+      router.replace("/auth/CreateAccount");
     }, 3000);
 
     return () => clearTimeout(timer);
