@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     textAlignVertical: 'top',
-    height: '100%',
+    height: '50%',
   },
   footer: {
     marginTop: 'auto',

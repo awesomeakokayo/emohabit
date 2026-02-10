@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, Boolean, DateTime, Date, ForeignKey, Time
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
-from datatime import datatime
+from datetime import datetime
 from app.database import Base
 
 class Routine(Base):
@@ -13,7 +13,7 @@ class Routine(Base):
     name = Column(String(255), default="Daily Routine")
     effective_date = Column(Date, nullable=False)
     is_active = Column(Boolean, default="Daily Routine")
-    emo_approved = Column(Boolean, default=False) #Emo reviewdd this routine
+    emo_approved = Column(Boolean, default=False) #Emo reviewed this routine
     created_at = Column(DateTime, default=datetime.utcnow)
 
     #Relationships

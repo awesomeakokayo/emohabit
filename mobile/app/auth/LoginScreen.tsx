@@ -90,21 +90,23 @@ export default function LoginScreen() {
               gap: 10,
               marginTop: 20,
             }}>
-              <Pressable onPress={handleLogin} style={{
-                width: '100%',
-                backgroundColor: "#FF8A00",
-                height: 53,
-                borderRadius: 20,
-                justifyContent: "center",
-                alignItems: "center"
-              }}>
-                <Text style={{
-                  color: "white",
-                  fontSize: 22,
-                  fontWeight: "bold",
+              <Link href='/Welcome/intro'>
+                <Pressable style={{
+                  width: '100%',
+                  backgroundColor: "#FF8A00",
+                  height: 53,
+                  borderRadius: 20,
                   justifyContent: "center",
-                }} >Sign In</Text>
-              </Pressable>
+                  alignItems: "center"
+                }}>
+                  <Text style={{
+                    color: "white",
+                    fontSize: 22,
+                    fontWeight: "bold",
+                    justifyContent: "center",
+                  }} >Sign In</Text>
+                </Pressable>
+              </Link>
 
               <View style={styles.container}>
                 <View style={styles.line} />

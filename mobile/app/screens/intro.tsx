@@ -8,8 +8,8 @@ export default function Intro() {
         <View style={styles.container}>
             <SafeAreaView style={styles.safeArea}>
                 <View style={styles.container}>
-                    <Image source={require("../../assets/images/vector.svg")}
-                        style={{ width: 100, height: 200 }}
+                    <Image source={require("../../assets/images/Vector.svg")}
+                        style={{ width: 200, height: 200 }}
                     />
                 </View>
 
